@@ -13,7 +13,7 @@ const ChatWidget = () => {
     setIsOpen(!isOpen);
   };
 
-const handleSendMessage = async () => {
+  const handleSendMessage = async () => {
     if (!userInput.trim()) return;
 
     const userMsg = { id: Date.now(), text: userInput, sender: 'user' };
@@ -24,28 +24,32 @@ const handleSendMessage = async () => {
     setLoading(true);
 
     try {
-        // Sahi URL aur Port: 8000
-// Check karein ke frontend local par chal raha hai ya internet par
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://127.0.0.1:8000/api/query' 
-    : 'https://hackathon-i-ai-book-rag-chatbotfina.vercel.app/api/query'; // 'l' hata diya
+        // --- UPDATED URLS ---
+        const LOCAL_API_URL = 'http://127.0.0.1:7860/api/query';
+        const PROD_API_URL = 'https://mohammadtouqeer-physical-ai-chatbot-new.hf.space/api/query';
 
-const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    // Backend jo field mang raha hai (query ya question), wo yahan likhein
-    body: JSON.stringify({ query: queryToSend }), 
-});
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? LOCAL_API_URL
+            : PROD_API_URL;
+
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            // Backend "question" field mang raha hai
+            body: JSON.stringify({ question: queryToSend }), 
+        });
 
         const data = await response.json();
         
-        // Backend "answer" bhej raha hai
-        if (data.answer) {
+        // Backend "response" key mein data bhej raha hai
+        const botAnswer = data.response || data.answer || data.text;
+
+        if (botAnswer) {
             setMessages(prev => [...prev, { 
                 id: Date.now() + 1, 
-                text: data.answer, 
+                text: botAnswer, 
                 sender: 'bot',
-                sources: data.sources 
+                sources: data.sources || [] 
             }]);
         } else {
             throw new Error("Invalid response format");
@@ -54,7 +58,7 @@ const response = await fetch(API_URL, {
         console.error("API Error:", error);
         setMessages(prev => [...prev, { 
             id: Date.now() + 1, 
-            text: "Server se rabta nahi ho pa raha. Check karein ke backend (Port 8000) chal raha hai?", 
+            text: "Server se rabta nahi ho pa raha. Check karein ke Hugging Face Space running hai?", 
             sender: 'bot' 
         }]);
     } finally {
@@ -81,7 +85,7 @@ const response = await fetch(API_URL, {
                       <small><strong>Sources:</strong></small>
                       {message.sources.map((src, i) => (
                         <div key={i} style={{fontSize: '10px', color: '#666'}}>
-                          • {src.text_preview}
+                          • {src.text_preview || src.text || "Textbook segment"}
                         </div>
                       ))}
                     </div>
